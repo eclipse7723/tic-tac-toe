@@ -2,8 +2,8 @@ from random import sample
 
 
 EMPTY_CELL = '.'        # Маркер пустой ячейки
-MARKERS = ['X', 'O']    # Маркеры игроков
-DESK_SIZE = 3           # Размер доски (поддерживается сейчас только 3)
+MARKERS = ['X', 'O']    # Маркеры игроков (только заглавные)
+BOARD_SIZE = 3          # Размер доски (поддерживается сейчас только 3)
 
 
 class Player:
@@ -14,21 +14,21 @@ class Player:
         self.name = name
 
 
-class Desk:
+class Board:
     def __init__(self):
-        self.__desk = [[EMPTY_CELL for i in range(DESK_SIZE)] for i in range(DESK_SIZE)]
+        self.__board = [[EMPTY_CELL for i in range(BOARD_SIZE)] for i in range(BOARD_SIZE)]
         self.__players = []
         self.__step = 0             # четные для первого игрока, нечетные для второго
         self.__state = False, None  # Завершена ли игра, Победитель
 
-    def get_desk(self):
+    def get_board(self):
         """ Возвращает доску """
-        return self.__desk
+        return self.__board
 
-    def update_desk(self, marker: str, position: tuple):
+    def update_board(self, marker: str, position: tuple):
         """ Устанавливает маркер в указаную позицию """
-        if self.__desk[position[0]][position[1]] == EMPTY_CELL:
-            self.__desk[position[0]][position[1]] = marker
+        if self.__board[position[0]][position[1]] == EMPTY_CELL:
+            self.__board[position[0]][position[1]] = marker
             return True
         else:
             return False
@@ -45,11 +45,11 @@ class Desk:
             if len(set(row)) == 1:
                 self.__state = True, self.fetch_player_by_marker(row[0])
 
-    def check_desk(self):
+    def check_board(self):
         """ Проверяет доску на предмет чьей-то победы """
         # 1) Есть ли свободные ячейки
         isEmpty = False
-        for row in self.__desk:
+        for row in self.__board:
             if EMPTY_CELL in row:
                 isEmpty = True
                 break
@@ -58,10 +58,10 @@ class Desk:
             self.__state = True, None
 
         # 2) Поиск выиграшных комбинаций
-        rows = [row for row in self.__desk]
-        columns = [[row[i] for row in self.__desk] for i in range(DESK_SIZE)]
-        diagonals = [[self.__desk[i][i] for i in range(DESK_SIZE)],                 # Главная диагональ
-                     [self.__desk[i][DESK_SIZE-i-1] for i in range(DESK_SIZE)]]     # Побочная диагональ
+        rows = [row for row in self.__board]
+        columns = [[row[i] for row in self.__board] for i in range(BOARD_SIZE)]
+        diagonals = [[self.__board[i][i] for i in range(BOARD_SIZE)],  # Главная диагональ
+                     [self.__board[i][BOARD_SIZE - i - 1] for i in range(BOARD_SIZE)]]     # Побочная диагональ
         self.check_combinations(rows)
         self.check_combinations(columns)
         self.check_combinations(diagonals)
@@ -102,8 +102,8 @@ class Desk:
 
 
 class Controller:
-    def __init__(self, desk, view):
-        self.desk = desk
+    def __init__(self, board, view):
+        self.board = board
         self.view = view
 
     def init_players(self):
@@ -119,15 +119,15 @@ class Controller:
         self.view.notify(f"1st player's name is {playerA.name} and his marker is {playerA.marker!r}")
         self.view.notify(f"2nd player's name is {playerB.name} and his marker is {playerB.marker!r}")
         self.show_instruction()
-        self.desk.add_player(playerA)
-        self.desk.add_player(playerB)
+        self.board.add_player(playerA)
+        self.board.add_player(playerB)
 
     def read(self):
         """ Читает команды от пользователя """
-        if self.desk.state[0]:
+        if self.board.state[0]:
             return False
         command = input("> ").replace(' ', '').lower()
-        allowed_moves = self.desk.get_allowed_moves()
+        allowed_moves = self.board.get_allowed_moves()
         if command in allowed_moves.keys():
             position = allowed_moves[command]
             player = self.get_current_player()
@@ -142,18 +142,18 @@ class Controller:
             self.view.notify("Unknown command, check 'help'")
         return True
 
-    def show_desk(self):
+    def show_board(self):
         """ Отобразить доску """
-        self.view.draw(self.desk.get_desk())
+        self.view.draw(self.board.get_board())
 
     def move(self, player: Player, position: tuple):
         """ Устанавливает значок игрока в указанное место """
-        isMoved = self.desk.update_desk(player.marker, position)
+        isMoved = self.board.update_board(player.marker, position)
         if isMoved is False:
             return self.view.notify('This position is already taken, try another')
-        self.desk.next_step()
+        self.board.next_step()
         self.view.notify(f"{player.name} makes a move:")
-        self.view.draw(self.desk.get_desk())
+        self.view.draw(self.board.get_board())
         # Проверяем состояние игры (то есть доски)
         self.check_game_results()
 
@@ -163,7 +163,7 @@ class Controller:
 
     def get_current_player(self):
         """ Возвращает текущего игрока, который делает ход """
-        return self.desk.players[self.desk.step % 2]
+        return self.board.players[self.board.step % 2]
 
     def show_current_player(self):
         """ Напоминает, кто сейчас ходит -> 'who' """
@@ -173,8 +173,8 @@ class Controller:
     def check_game_results(self):
         """ Возвращает состояние доски """
         # Проверяем доску только после пятого хода, поскольку до этого выиграшных комбинаций не может быть
-        if self.desk.step > 3:
-            state = self.desk.check_desk()
+        if self.board.step > 3:
+            state = self.board.check_board()
             if state[0]:
                 self.show_results(state)
 
@@ -185,7 +185,7 @@ class Controller:
 
 class View:
     @staticmethod
-    def draw(desk):
+    def draw(board):
         """
         Рисует доску такого вида (для поля любого размера):
               1  ┃  2  ┃  3
@@ -194,14 +194,14 @@ class View:
             ━━━━━╋━━━━━╋━━━━━
               7  ┃  8  ┃  9
         """
-        for i in range(DESK_SIZE):
+        for i in range(BOARD_SIZE):
             print("\t", end='')
-            for j in range(DESK_SIZE):
-                print(f"  {desk[i][j]}  ", end='')
-                if j < DESK_SIZE-1:
+            for j in range(BOARD_SIZE):
+                print(f"  {board[i][j]}  ", end='')
+                if j < BOARD_SIZE-1:
                     print("|", end='')
-            if i < DESK_SIZE-1:
-                print(f"\n\t—————{'+—————'*(DESK_SIZE-1)}")
+            if i < BOARD_SIZE-1:
+                print(f"\n\t—————{'+—————'*(BOARD_SIZE - 1)}")
             else:
                 print("")
 
@@ -238,7 +238,7 @@ class View:
 
 class Game:
     def __init__(self):
-        self.controller = Controller(Desk(), View())
+        self.controller = Controller(Board(), View())
         self.run = False
 
     def play(self):
