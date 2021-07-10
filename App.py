@@ -187,18 +187,23 @@ class View:
     @staticmethod
     def draw(desk):
         """
-        Рисует доску такого вида:
+        Рисует доску такого вида (для поля любого размера):
               1  ┃  2  ┃  3
             ━━━━━╋━━━━━╋━━━━━
               4  ┃  5  ┃  6
             ━━━━━╋━━━━━╋━━━━━
               7  ┃  8  ┃  9
         """
-        print("\t  {}  |  {}  |  {} \n".format(desk[0][0], desk[0][1], desk[0][2]),
-              "\t—————+—————+—————\n",
-              "\t  {}  |  {}  |  {} \n".format(desk[1][0], desk[1][1], desk[1][2]),
-              "\t—————+—————+—————\n",
-              "\t  {}  |  {}  |  {} \n".format(desk[2][0], desk[2][1], desk[2][2]))
+        for i in range(DESK_SIZE):
+            print("\t", end='')
+            for j in range(DESK_SIZE):
+                print(f"  {desk[i][j]}  ", end='')
+                if j < DESK_SIZE-1:
+                    print("|", end='')
+            if i < DESK_SIZE-1:
+                print(f"\n\t—————{'+—————'*(DESK_SIZE-1)}")
+            else:
+                print("")
 
     @staticmethod
     def notify(message):
