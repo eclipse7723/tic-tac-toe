@@ -1,22 +1,20 @@
 from random import sample
 
 
-EMPTY_CELL = '.'        # Маркер пустой ячейки
-MARKERS = ['X', 'O']    # Маркеры игроков (только заглавные)
-BOARD_SIZE = 3          # Размер доски (поддерживается сейчас только 3)
+MARKERS = {0: 'O', 1: 'X'}     # Маркеры
+BOARD_SIZE = 3                 # Размер доски (поддерживается сейчас только 3)
 
 
 class Player:
-    def __init__(self, name: str, marker: str):
-        assert len(marker) == 1, f"Player's marker should be 1 character (you put {marker!r})"
-        assert marker.upper() in ''.join(MARKERS), f"Invalid marker {marker!r}, only {MARKERS[0]!r} or {MARKERS[1]!r}"
+    def __init__(self, name: str, marker: int):
+        assert marker in MARKERS.keys(), 'Invalid marker id'
         self.marker = marker
         self.name = name
 
 
 class Board:
     def __init__(self):
-        self.__board = [[EMPTY_CELL for i in range(BOARD_SIZE)] for i in range(BOARD_SIZE)]
+        self.__board = [[None for i in range(BOARD_SIZE)] for i in range(BOARD_SIZE)]
         self.__players = []
         self.__step = 0             # четные для первого игрока, нечетные для второго
         self.__state = False, None  # Завершена ли игра, Победитель
@@ -25,9 +23,9 @@ class Board:
         """ Возвращает доску """
         return self.__board
 
-    def update_board(self, marker: str, position: tuple):
+    def update_board(self, marker: int, position: tuple):
         """ Устанавливает маркер в указаную позицию """
-        if self.__board[position[0]][position[1]] == EMPTY_CELL:
+        if self.__board[position[0]][position[1]] is None:
             self.__board[position[0]][position[1]] = marker
             return True
         else:
@@ -40,7 +38,7 @@ class Board:
     def check_combinations(self, lst: list):
         """ Проверка выигрышной комбинации """
         for row in lst:
-            if row[0] == EMPTY_CELL:
+            if row[0] is None:
                 continue
             if len(set(row)) == 1:
                 self.__state = True, self.fetch_player_by_marker(row[0])
@@ -50,7 +48,7 @@ class Board:
         # 1) Есть ли свободные ячейки
         isEmpty = False
         for row in self.__board:
-            if EMPTY_CELL in row:
+            if None in row:
                 isEmpty = True
                 break
         if isEmpty is False:
@@ -60,8 +58,8 @@ class Board:
         # 2) Поиск выиграшных комбинаций
         rows = [row for row in self.__board]
         columns = [[row[i] for row in self.__board] for i in range(BOARD_SIZE)]
-        diagonals = [[self.__board[i][i] for i in range(BOARD_SIZE)],  # Главная диагональ
-                     [self.__board[i][BOARD_SIZE - i - 1] for i in range(BOARD_SIZE)]]     # Побочная диагональ
+        diagonals = [[self.__board[i][i] for i in range(BOARD_SIZE)],                       # Главная диагональ
+                     [self.__board[i][BOARD_SIZE - i - 1] for i in range(BOARD_SIZE)]]      # Побочная диагональ
         self.check_combinations(rows)
         self.check_combinations(columns)
         self.check_combinations(diagonals)
@@ -70,6 +68,7 @@ class Board:
 
     @property
     def players(self):
+        """ Возвращает список игроков """
         return self.__players
 
     def add_player(self, player: Player):
@@ -77,11 +76,11 @@ class Board:
         assert len(self.__players) < 2, 'Only 2 players allowed'
         self.__players.append(player)
 
-    def fetch_player_by_marker(self, marker):
-        """ Возвращает игрока по указанному маркеру """
-        assert marker.upper() in MARKERS, f'Unknown marker {marker!r}, it should be {MARKERS[0]!r} or {MARKERS[1]!r}'
+    def fetch_player_by_marker(self, marker: int):
+        """ Возвращает игрока по указанному id маркера """
+        assert marker in MARKERS.keys(), f'Unknown marker id {marker!r}'
         players = {player.marker: player for player in self.__players}
-        return players[marker.upper()]
+        return players[marker]
 
     @property
     def step(self):
@@ -113,11 +112,11 @@ class Controller:
         nameA = input("> ")
         self.view.send("Enter 2nd player's name")
         nameB = input("> ")
-        markerA, markerB = sample(MARKERS, 2)
+        markerA, markerB = sample(MARKERS.keys(), 2)
         playerA = Player(nameA, markerA)
         playerB = Player(nameB, markerB)
-        self.view.notify(f"1st player's name is {playerA.name} and his marker is {playerA.marker!r}")
-        self.view.notify(f"2nd player's name is {playerB.name} and his marker is {playerB.marker!r}")
+        self.view.notify(f"1st player's name is {playerA.name} and his marker is {MARKERS[playerA.marker]!r}")
+        self.view.notify(f"2nd player's name is {playerB.name} and his marker is {MARKERS[playerB.marker]!r}")
         self.show_instruction()
         self.board.add_player(playerA)
         self.board.add_player(playerB)
@@ -168,7 +167,8 @@ class Controller:
     def show_current_player(self):
         """ Напоминает, кто сейчас ходит -> 'who' """
         current_player = self.get_current_player()
-        self.view.notify(f"Current player is {current_player.name} (marker: {current_player.marker!r})")
+        current_marker = MARKERS[current_player.marker]
+        self.view.notify(f"Current player is {current_player.name} (marker: {current_marker!r})")
 
     def check_game_results(self):
         """ Возвращает состояние доски """
@@ -197,7 +197,8 @@ class View:
         for i in range(BOARD_SIZE):
             print("\t", end='')
             for j in range(BOARD_SIZE):
-                print(f"  {board[i][j]}  ", end='')
+                marker = '.' if board[i][j] is None else MARKERS[board[i][j]]
+                print(f"  {marker}  ", end='')
                 if j < BOARD_SIZE-1:
                     print("|", end='')
             if i < BOARD_SIZE-1:
