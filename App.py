@@ -45,7 +45,16 @@ class Board:
 
     def check_board(self):
         """ Проверяет доску на предмет чьей-то победы """
-        # 1) Есть ли свободные ячейки
+        # 1) Поиск выиграшных комбинаций
+        rows = [row for row in self.__board]
+        columns = [[row[i] for row in self.__board] for i in range(BOARD_SIZE)]
+        diagonals = [[self.__board[i][i] for i in range(BOARD_SIZE)],                       # Главная диагональ
+                     [self.__board[i][BOARD_SIZE - i - 1] for i in range(BOARD_SIZE)]]      # Побочная диагональ
+        self.check_combinations(rows)
+        self.check_combinations(columns)
+        self.check_combinations(diagonals)
+
+        # 2) Есть ли свободные ячейки
         isEmpty = False
         for row in self.__board:
             if None in row:
@@ -54,15 +63,6 @@ class Board:
         if isEmpty is False:
             # Игра завершена, но победителя нет
             self.__state = True, None
-
-        # 2) Поиск выиграшных комбинаций
-        rows = [row for row in self.__board]
-        columns = [[row[i] for row in self.__board] for i in range(BOARD_SIZE)]
-        diagonals = [[self.__board[i][i] for i in range(BOARD_SIZE)],                       # Главная диагональ
-                     [self.__board[i][BOARD_SIZE - i - 1] for i in range(BOARD_SIZE)]]      # Побочная диагональ
-        self.check_combinations(rows)
-        self.check_combinations(columns)
-        self.check_combinations(diagonals)
 
         return self.__state
 
